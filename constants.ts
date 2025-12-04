@@ -28,53 +28,83 @@ export const CATEGORY_DATA = [
 ];
 
 export const SUB_CATEGORIES = [
+  // --- GEZİLECEK YERLER ALT KATEGORİLERİ ---
   { 
-    id: 'favoriler', 
+    id: 'favoriler',
+    parentCategoryId: 'Gezilecek Yerler',
     title: 'Favoriler', 
     description: 'Edirne gezginlerinin en çok puan verdiği, mutlaka görülmesi gereken noktalar.',
     image: 'https://media.istockphoto.com/id/1219214780/tr/vekt%C3%B6r/turistik-yerler-semboller-ve-simgeleri-ile-t%C3%BCrkiye-el-%C3%A7izilmi%C5%9F-vekt%C3%B6r-ill%C3%BCstrasyon.jpg?s=1024x1024&w=is&k=20&c=9uTZ7da4ZbTiGdv7uHNACRr3iVw1zKJbCSCQIBysmTw=' 
   },
   { 
     id: 'tarihi', 
+    parentCategoryId: 'Gezilecek Yerler',
     title: 'Tarihi Mekanlar', 
     description: 'Osmanlı\'ya 92 yıl başkentlik yapmış şehrin sokaklarında tarihe yolculuk yapın.',
     image: 'https://www.trakyacityhotel.com/wp-content/uploads/2014/01/selimiye-camii.jpg' 
   },
   { 
     id: 'carsi', 
+    parentCategoryId: 'Gezilecek Yerler',
     title: 'Çarşılar & Pazarlar', 
     description: 'Ali Paşa\'dan Arasta\'ya, tarihi atmosferde alışverişin keyfini çıkarın.',
     image: 'https://acrpalas.com/wp-content/uploads/2017/03/carsi.jpg' 
   },
   { 
     id: 'muze', 
+    parentCategoryId: 'Gezilecek Yerler',
     title: 'Müzeler', 
     description: 'Sağlık Müzesi\'nden İslam Eserleri\'ne, şehrin kültür hazinelerini keşfedin.',
     image: 'https://edirne.ktb.gov.tr/Resim/431558,edirne-muzesi-4jpg.png?0' 
   },
   { 
     id: 'guzel', 
+    parentCategoryId: 'Gezilecek Yerler',
     title: 'Güzel Mekanlar', 
     description: 'Fotoğraf çekmek ve anı ölümsüzleştirmek için en estetik köşeler.',
     image: 'https://www.aksan-insaat.com/_FILES/Contents/651/Image.jpg?v=20251203144636' 
   },
   { 
     id: 'dogal', 
+    parentCategoryId: 'Gezilecek Yerler',
     title: 'Doğal Güzellikler', 
     description: 'Meriç ve Tunca nehirleri kıyısında, yeşilin ve mavinin buluştuğu alanlar.',
     image: 'https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?q=80&w=600&auto=format&fit=crop' 
+  },
+
+  // --- YEME & İÇME ALT KATEGORİLERİ ---
+  {
+    id: 'ciger',
+    parentCategoryId: 'Yeme & İçme',
+    title: 'Meşhur Tava Ciğer',
+    description: 'Edirne denince akla gelen ilk lezzet. İncecik kesilmiş, çıtır çıtır tava ciğeri.',
+    image: 'https://www.evdeborek.com/upload/resimler/haber/edirnetavacigeri3.JPG'
+  },
+  {
+    id: 'tatli',
+    parentCategoryId: 'Yeme & İçme',
+    title: 'Tatlılar & Şekerleme',
+    description: 'Badem ezmesi, Kavala kurabiyesi ve Kallavi. Saray mutfağından günümüze.',
+    image: 'https://i.lezzet.com.tr/images-xxlarge-recipe/edirne-usulu_badem_ezmesi-214f1d6e-3cfe-45db-b606-1810a0c2d44f.jpg'
+  },
+  {
+    id: 'mekan',
+    parentCategoryId: 'Yeme & İçme',
+    title: 'Keyif & Manzara',
+    description: 'Nehir kenarında kahvaltı veya tarihi konaklarda kahve keyfi.',
+    image: 'https://dynamic-media-cdn.tripadvisor.com/media/photo-o/18/34/06/6c/protokol-evi.jpg?w=600&h=400&s=1'
   }
 ];
 
 export const CATEGORIES: string[] = CATEGORY_DATA.map(c => c.id);
 
 export const PLACES: Place[] = [
+  // --- GEZİLECEK YERLER ---
   {
     id: '1',
     title: 'Selimiye Camii',
     category: 'Gezilecek Yerler',
     subCategoryId: 'tarihi',
-    // Yeni Link
     image: 'https://www.trakyacityhotel.com/wp-content/uploads/2014/01/selimiye-camii.jpg',
     rating: 4.9,
     location: 'Meydan Mahallesi, Edirne',
@@ -167,5 +197,72 @@ export const PLACES: Place[] = [
     entranceFee: 'Ücretsiz',
     history: 'Sadrazam Hersekzade Semiz Ali Paşa tarafından Mimar Sinan\'a yaptırılmıştır. Geliri camilere vakfedilmiştir.',
     architecture: '300 metre uzunluğunda olup, 6 kapısı ve 130 dükkanı vardır. Kırmızı-beyaz taş işçiliği ile dikkat çeker.'
+  },
+
+  // --- YEME & İÇME MEKANLARI ---
+  {
+    id: 'c1',
+    title: 'Ciğerci Niyazi Usta',
+    category: 'Yeme & İçme',
+    subCategoryId: 'ciger',
+    image: 'https://www.evdeborek.com/upload/resimler/haber/edirnetavacigeri3.JPG',
+    rating: 4.8,
+    location: 'Ortakapı, Edirne',
+    description: 'Edirne tava ciğerinin en bilinen adreslerinden. Yanında kurutulmuş biberiyle servis edilen çıtır ciğer.',
+    visitingHours: '11:00 - 21:00',
+    history: 'Yıllardır değişmeyen lezzetiyle Edirne\'ye gelen turistlerin uğrak noktasıdır. Kurumsal yapısı ve hızlı servisiyle bilinir.',
+    cuisine: 'Ciğerci',
+    atmosphere: 'Tarihi Esnaf Lokantası',
+    specialty: 'Tava Ciğer, Kara Biber Sosu, Piyaz, Cacık',
+    architecture: 'İçerideki ciğer kokusu ve kalabalık atmosfer, gerçek bir esnaf lokantası deneyimi sunar. Duvarları ünlü ziyaretçilerin fotoğrafları süsler.',
+    legends: 'Yanında verilen "Kara Biber" sosunun sırrının Niyazi Usta tarafından özel olarak harmanlandığı söylenir.'
+  },
+  {
+    id: 'c2',
+    title: 'Aydın Tava Ciğer',
+    category: 'Yeme & İçme',
+    subCategoryId: 'ciger',
+    image: 'https://www.evdeborek.com/upload/resimler/haber/edirnetavacigeri3.JPG',
+    rating: 4.7,
+    location: 'Tahmis Meydanı, Edirne',
+    description: 'Salaş ve samimi ortamında gerçek Edirne ciğeri deneyimi.',
+    visitingHours: '11:00 - 20:00',
+    cuisine: 'Ciğerci',
+    atmosphere: 'Salaş & Samimi',
+    specialty: 'Yaprak Ciğer, Acı Biber Turşusu, Ayran',
+    history: 'Daha küçük ve butik bir işletme olan Aydın Tava Ciğer, yerel halkın favorilerindendir.',
+    architecture: 'Mütevazı dekorasyonu ile lezzetin ön planda olduğu bir mekandır.'
+  },
+  {
+    id: 't1',
+    title: 'Keçecizade',
+    category: 'Yeme & İçme',
+    subCategoryId: 'tatli',
+    image: 'https://st3.myideasoft.com/idea/gb/35/myassets/products/206/img-20220623-143009-397.jpg?revision=1656079977',
+    rating: 4.9,
+    location: 'Saraçlar Caddesi',
+    description: 'Edirne\'nin meşhur badem ezmesi, kavala kurabiyesi ve lokum çeşitleri.',
+    history: '1974 yılından beri geleneksel yöntemlerle üretim yapan tarihi bir markadır. Dededen toruna geçen tarifler kullanılır.',
+    cuisine: 'Pastane & Şekerleme',
+    atmosphere: 'Nostaljik Pastane',
+    specialty: 'Badem Ezmesi, Kavala Kurabiyesi, Deva-i Misk Helvası, Lokum Çeşitleri',
+    architecture: 'Vitrinleri rengarenk lokumlar ve badem ezmeleri ile süslü, nostaljik bir hava taşır.',
+    visitingHours: '09:00 - 21:00'
+  },
+  {
+    id: 'k1',
+    title: 'Protokol Evi',
+    category: 'Yeme & İçme',
+    subCategoryId: 'mekan',
+    image: 'https://dynamic-media-cdn.tripadvisor.com/media/photo-o/0e/96/8c/29/protokol-evi.jpg?w=600&h=400&s=1',
+    rating: 4.6,
+    location: 'Meriç Köprüsü Yanı',
+    description: 'Meriç Nehri kenarında, tarihi köprü manzaralı kahvaltı ve çay keyfi.',
+    visitingHours: '08:00 - 00:00',
+    history: 'Eskiden Gümrük Binası olarak kullanılan yapı, günümüzde sosyal tesis olarak hizmet vermektedir.',
+    cuisine: 'Çay Bahçesi & Kahvaltı',
+    atmosphere: 'Nehir Manzaralı & Tarihi',
+    specialty: 'Serpme Kahvaltı, Semaver Çay, Gözleme, Tost',
+    architecture: 'Tarihi dokusu korunarak restore edilmiş taş bina ve nehir kenarındaki geniş bahçesiyle huzurlu bir ortam sunar.'
   }
 ];

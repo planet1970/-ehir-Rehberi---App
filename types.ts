@@ -1,4 +1,6 @@
 
+import { LucideIcon } from 'lucide-react';
+
 export interface Place {
   id: string;
   title: string;
@@ -8,15 +10,34 @@ export interface Place {
   rating: number;
   location: string;
   description: string;
-  // Yeni Detay Alanları
+  // Detay Alanları (Tarihi Yerler İçin)
   architect?: string;
   year?: string;
+  // Detay Alanları (Yeme & İçme İçin)
+  cuisine?: string; // Örn: Ciğerci, Tatlıcı
+  specialty?: string; // Örn: Tava Ciğer, Badem Ezmesi
+  atmosphere?: string; // Örn: Esnaf Lokantası, Tarihi Konak, Aile Yeri
+  // Ortak Detaylar
   tags?: string[];
-  history?: string;
-  architecture?: string;
-  legends?: string;
+  history?: string; // Restoranlar için "Hikayemiz" olarak kullanılacak
+  architecture?: string; // Restoranlar için "Lezzet Sırları" olarak kullanılacak
+  legends?: string; // Restoranlar için "Menü Önerisi" olarak kullanılacak
   visitingHours?: string;
   entranceFee?: string;
+}
+
+export interface CategoryData {
+  id: string;
+  label: string;
+  icon: LucideIcon;
+}
+
+export interface SubCategoryData {
+  id: string;
+  parentCategoryId: string; // Hangi ana kategoriye ait olduğu (Gezilecek Yerler veya Yeme & İçme)
+  title: string;
+  description: string;
+  image: string;
 }
 
 export type Category = 'Tümü' | 'Camiler' | 'Müzeler' | 'Köprüler' | 'Çarşılar';
