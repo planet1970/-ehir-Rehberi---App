@@ -1,6 +1,18 @@
 
 import { LucideIcon } from 'lucide-react';
 
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  avatar?: string;
+  stats: {
+    reviews: number;
+    favorites: number;
+    visited: number;
+  }
+}
+
 export interface Place {
   id: string;
   title: string;
@@ -42,7 +54,7 @@ export interface SubCategoryData {
 
 export type Category = 'Tümü' | 'Camiler' | 'Müzeler' | 'Köprüler' | 'Çarşılar';
 
-export type Screen = 'home' | 'detail' | 'subCategory' | 'subCategoryDetail' | 'extendedDetail';
+export type Screen = 'home' | 'detail' | 'subCategory' | 'subCategoryDetail' | 'extendedDetail' | 'login' | 'signup' | 'profile';
 
 export interface FileStructureItem {
   name: string;

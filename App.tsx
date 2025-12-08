@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, MouseEvent, useEffect } from 'react';
-import { Place, Screen, CategoryData, SubCategoryData } from './types';
+import { Place, Screen, CategoryData, SubCategoryData, User } from './types';
 import { api } from './services/api'; // Import the new API service
 import { 
   MapPin, 
@@ -15,7 +15,7 @@ import {
   Home,
   Compass,
   Heart,
-  User,
+  User as UserIcon,
   ChevronRight,
   Search,
   Grid,
@@ -40,8 +40,53 @@ import {
   ChefHat,
   Armchair,
   Volume2,
-  StopCircle
+  StopCircle,
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  CheckCircle,
+  Shield,
+  Chrome
 } from 'lucide-react';
+
+// --- MOCK AUTH SERVICE ---
+const authService = {
+  login: async (email: string, password: string): Promise<User> => {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        if (email && password) {
+          resolve({
+            id: 'u1',
+            name: 'Mert Yılmaz',
+            email: email,
+            avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
+            stats: {
+              reviews: 12,
+              favorites: 5,
+              visited: 8
+            }
+          });
+        } else {
+          reject(new Error('Giriş başarısız'));
+        }
+      }, 1500);
+    });
+  },
+  signup: async (name: string, email: string, password: string): Promise<User> => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve({
+          id: 'u2',
+          name: name,
+          email: email,
+          avatar: undefined, // No avatar initially
+          stats: { reviews: 0, favorites: 0, visited: 0 }
+        });
+      }, 1500);
+    });
+  }
+};
 
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<Screen>('home');
@@ -53,6 +98,9 @@ export default function App() {
   const [subCategories, setSubCategories] = useState<SubCategoryData[]>([]);
   const [places, setPlaces] = useState<Place[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // User State
+  const [user, setUser] = useState<User | null>(null);
   
   // Onboarding State
   const [showOnboarding, setShowOnboarding] = useState(true);
@@ -144,6 +192,14 @@ export default function App() {
     setCurrentScreen('subCategoryDetail');
   };
 
+  const handleProfileClick = () => {
+    if (user) {
+      setCurrentScreen('profile');
+    } else {
+      setCurrentScreen('login');
+    }
+  };
+
   const goBack = () => {
     if (currentScreen === 'extendedDetail') {
       setCurrentScreen('detail');
@@ -157,11 +213,24 @@ export default function App() {
     } else if (currentScreen === 'subCategoryDetail') {
       setCurrentScreen('home');
       setSelectedSubCategoryId(null);
+    } else if (['login', 'signup', 'profile'].includes(currentScreen)) {
+      setCurrentScreen('home');
     }
   };
 
   const handleOnboardingFinish = () => {
     setShowOnboarding(false);
+  };
+
+  // Auth Handlers
+  const handleLoginSuccess = (loggedInUser: User) => {
+    setUser(loggedInUser);
+    setCurrentScreen('home'); // Or profile
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    setCurrentScreen('home');
   };
 
   return (
@@ -213,6 +282,9 @@ export default function App() {
                 categories={categories}
                 subCategories={subCategories}
                 places={places}
+                user={user}
+                onProfileClick={handleProfileClick}
+                onLogout={handleLogout}
               />
             ) : currentScreen === 'subCategoryDetail' ? (
               <SubCategoryDetailScreen 
@@ -229,11 +301,29 @@ export default function App() {
                 onMoreInfo={navigateToExtendedDetail}
                 places={places}
               />
-            ) : (
+            ) : currentScreen === 'extendedDetail' ? (
               <ExtendedDetailScreen 
-                placeId={selectedPlaceId}
+                placeId={selectedPlaceId} 
                 onBack={goBack}
                 places={places}
+              />
+            ) : currentScreen === 'login' ? (
+              <LoginScreen 
+                onLoginSuccess={handleLoginSuccess}
+                onNavigateToSignup={() => setCurrentScreen('signup')}
+                onBack={() => setCurrentScreen('home')}
+              />
+            ) : currentScreen === 'signup' ? (
+              <SignUpScreen 
+                onSignupSuccess={handleLoginSuccess}
+                onNavigateToLogin={() => setCurrentScreen('login')}
+                onBack={() => setCurrentScreen('home')}
+              />
+            ) : (
+              <ProfileScreen 
+                user={user}
+                onLogout={handleLogout}
+                onBack={() => setCurrentScreen('home')}
               />
             )}
           </div>
@@ -247,7 +337,9 @@ export default function App() {
             </div>
             <NavIcon icon={<Compass size={24} />} label="Keşfet" active={currentScreen === 'subCategoryDetail'} />
             <NavIcon icon={<Heart size={24} />} label="Favoriler" />
-            <NavIcon icon={<User size={24} />} label="Profil" />
+            <div onClick={handleProfileClick} className="cursor-pointer">
+              <NavIcon icon={<UserIcon size={24} />} label="Profil" active={currentScreen === 'profile' || currentScreen === 'login' || currentScreen === 'signup'} />
+            </div>
           </div>
         )}
 
@@ -273,7 +365,6 @@ function NavIcon({ icon, label, active }: { icon: React.ReactNode, label: string
 }
 
 // --- ONBOARDING SCREEN ---
-
 function OnboardingScreen({ onFinish }: { onFinish: () => void }) {
   const [step, setStep] = useState(0);
 
@@ -371,14 +462,20 @@ function HomeScreen({
   scrollY,
   categories,
   subCategories,
-  places
+  places,
+  user,
+  onProfileClick,
+  onLogout
 }: { 
   onPlaceSelect: (id: string) => void, 
   onSubCategorySelect: (id: string) => void,
   scrollY: number,
   categories: CategoryData[],
   subCategories: SubCategoryData[],
-  places: Place[]
+  places: Place[],
+  user: User | null,
+  onProfileClick: () => void,
+  onLogout: () => void
 }) {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -429,14 +526,13 @@ function HomeScreen({
   const currentHeight = Math.max(HEADER_MIN_HEIGHT, HEADER_MAX_HEIGHT - scrollY);
   const scrollRatio = Math.min(scrollY / (HEADER_MAX_HEIGHT - HEADER_MIN_HEIGHT), 1);
   
-  // Custom opacity calculations for sharper transitions
   const bigContentOpacity = Math.max(0, 1 - (scrollRatio * 2.5));
   const smallContentOpacity = scrollRatio > 0.85 ? 1 : 0;
   
   return (
     <div className="flex flex-col min-h-full relative bg-slate-100">
       
-      {/* SIDE MENU (DRAWER) - IMPROVED */}
+      {/* SIDE MENU (DRAWER) */}
       <>
         {/* Backdrop */}
         <div 
@@ -444,39 +540,53 @@ function HomeScreen({
           onClick={(e) => { e.stopPropagation(); setIsMenuOpen(false); }}
         ></div>
         
-        {/* Drawer Panel - Slide Effect */}
+        {/* Drawer Panel - FIXED LAYOUT */}
         <div 
-          className={`absolute top-0 bottom-0 right-0 w-[80%] max-w-[300px] z-[61] bg-white shadow-2xl flex flex-col transform transition-transform duration-300 ease-out ${isMenuOpen ? 'translate-x-0' : 'translate-x-full'}`}
+          className={`absolute top-0 bottom-0 right-0 w-[80%] max-w-[300px] z-[61] bg-white shadow-2xl flex flex-col h-full transform transition-transform duration-300 ease-out ${isMenuOpen ? 'translate-x-0' : 'translate-x-full'}`}
           onClick={(e) => e.stopPropagation()}
         >
           
-          {/* Drawer Header (Profile) */}
+          {/* Drawer Header (Profile) - FIXED */}
           <div className="relative h-48 bg-slate-900 overflow-hidden flex-shrink-0">
-             {/* Abstract Decorations */}
              <div className="absolute -top-10 -right-10 w-40 h-40 bg-orange-500 rounded-full opacity-20 blur-3xl"></div>
              <div className="absolute top-10 -left-10 w-32 h-32 bg-blue-500 rounded-full opacity-20 blur-3xl"></div>
              
              {/* Content */}
              <div className="absolute inset-0 flex flex-col justify-end p-6 z-10">
                 <div className="flex items-center justify-between mb-4">
-                  <div className="w-16 h-16 rounded-full border-4 border-white/20 bg-gradient-to-br from-orange-400 to-pink-500 flex items-center justify-center text-white text-2xl font-bold shadow-xl">
-                    E
+                  <div className="w-16 h-16 rounded-full border-4 border-white/20 bg-gradient-to-br from-orange-400 to-pink-500 flex items-center justify-center text-white text-2xl font-bold shadow-xl overflow-hidden">
+                    {user && user.avatar ? (
+                      <img src={user.avatar} alt="Profile" className="w-full h-full object-cover" />
+                    ) : (
+                      <UserIcon size={32} />
+                    )}
                   </div>
                   <button onClick={() => setIsMenuOpen(false)} className="p-2 bg-white/10 rounded-full text-white/80 hover:bg-white/20 transition-colors">
                     <X size={18} />
                   </button>
                 </div>
                 <div>
-                   <h2 className="text-white font-bold text-xl leading-tight">Edirne Gezgini</h2>
-                   <div className="flex items-center mt-1 text-slate-400 text-xs font-medium cursor-pointer hover:text-white transition-colors">
-                      <span>Profili Düzenle</span>
-                      <Edit3 size={12} className="ml-1" />
+                   <h2 className="text-white font-bold text-xl leading-tight">
+                     {user ? user.name : 'Misafir Kullanıcı'}
+                   </h2>
+                   <div 
+                      onClick={() => { setIsMenuOpen(false); onProfileClick(); }}
+                      className="flex items-center mt-1 text-slate-400 text-xs font-medium cursor-pointer hover:text-white transition-colors"
+                    >
+                      {user ? (
+                        <span className="text-green-400 flex items-center gap-1">
+                           <div className="w-1.5 h-1.5 bg-green-400 rounded-full"></div> Çevrimiçi
+                        </span>
+                      ) : (
+                        <span>Giriş Yap / Kayıt Ol</span>
+                      )}
+                      {user && <Edit3 size={12} className="ml-2 text-slate-500" />}
                    </div>
                 </div>
              </div>
           </div>
 
-          {/* Drawer Categories List */}
+          {/* Drawer Categories List (SCROLLABLE MIDDLE) */}
           <div className="flex-1 overflow-y-auto p-4 space-y-1">
             <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 px-2">Hızlı Erişim</p>
             {categories.map((cat) => (
@@ -492,26 +602,28 @@ function HomeScreen({
             ))}
           </div>
 
-          {/* Drawer Footer (Actions) */}
-          <div className="p-4 bg-slate-50 border-t border-slate-100 flex flex-col space-y-2 pb-8">
+          {/* Drawer Footer (Actions) - FIXED BOTTOM */}
+          <div className="p-4 bg-slate-50 border-t border-slate-100 flex flex-col space-y-2 pb-8 flex-shrink-0">
             <button className="w-full flex items-center space-x-3 p-3 rounded-xl hover:bg-white text-slate-600 transition-colors border border-transparent hover:border-slate-200 hover:shadow-sm">
               <Settings size={20} />
               <span className="font-medium text-sm">Ayarlar</span>
             </button>
-            <button className="w-full flex items-center space-x-3 p-3 rounded-xl hover:bg-white text-slate-600 transition-colors border border-transparent hover:border-slate-200 hover:shadow-sm">
-              <HelpCircle size={20} />
-              <span className="font-medium text-sm">Yardım & Destek</span>
-            </button>
-            <div className="h-px bg-slate-200 my-1 mx-2"></div>
-            <button className="w-full flex items-center space-x-3 p-3 rounded-xl hover:bg-red-50 text-red-600 transition-colors group">
-              <LogOut size={20} className="group-hover:translate-x-1 transition-transform" />
-              <span className="font-bold text-sm">Çıkış Yap</span>
-            </button>
+            
+            {/* LOGOUT BUTTON IN DRAWER */}
+            {user && (
+               <button 
+                  onClick={() => { setIsMenuOpen(false); onLogout(); }}
+                  className="w-full flex items-center space-x-3 p-3 rounded-xl hover:bg-red-50 text-red-600 transition-colors border border-transparent hover:border-red-100 hover:shadow-sm mt-2"
+               >
+                  <LogOut size={20} />
+                  <span className="font-medium text-sm">Çıkış Yap</span>
+               </button>
+            )}
           </div>
         </div>
       </>
 
-      {/* STICKY HEADER CONTAINER */}
+      {/* STICKY HEADER */}
       <div 
         className="sticky top-0 z-10 w-full overflow-hidden shadow-2xl shadow-slate-900/20 transition-all duration-100 ease-linear bg-slate-900"
         style={{ height: `${currentHeight}px` }}
@@ -531,9 +643,7 @@ function HomeScreen({
         {/* Dark Overlay */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/30 to-black/70"></div>
         
-        {/* ACTION BUTTONS (FIXED POSITIONS) */}
-        
-        {/* Left: Search Icon */}
+        {/* ACTION BUTTONS */}
         <button 
           onMouseDown={(e) => e.stopPropagation()}
           onClick={() => setIsSearchOpen(true)}
@@ -542,11 +652,11 @@ function HomeScreen({
           <Search size={20} />
         </button>
 
-        {/* Right: Menu Icon */}
+        {/* MENU BUTTON (ALWAYS MENU ICON) */}
         <button 
           onMouseDown={(e) => e.stopPropagation()}
           onClick={() => setIsMenuOpen(true)}
-          className="absolute top-12 right-6 bg-white/20 backdrop-blur-md p-2.5 rounded-xl text-white hover:bg-white/30 transition-colors z-40 ring-1 ring-white/20 shadow-lg active:scale-95"
+          className="absolute top-12 right-6 z-40 bg-white/20 backdrop-blur-md p-2.5 rounded-xl text-white hover:bg-white/30 ring-1 ring-white/20 shadow-lg transition-transform active:scale-95"
         >
           <Menu size={20} />
         </button>
@@ -572,7 +682,7 @@ function HomeScreen({
            </div>
         )}
 
-        {/* EXPANDED CONTENT (Big Title) */}
+        {/* EXPANDED CONTENT */}
         <div 
           className="absolute inset-0 flex flex-col items-center justify-end pb-12 px-4 pointer-events-none"
           style={{ 
@@ -594,7 +704,7 @@ function HomeScreen({
           </div>
         </div>
 
-        {/* COLLAPSED CONTENT (Minimal Title) */}
+        {/* COLLAPSED CONTENT */}
         <div 
           className="absolute bottom-10 left-0 right-0 text-center transition-opacity duration-300 z-20 flex flex-col items-center pointer-events-none"
           style={{ opacity: isSearchOpen ? 0 : smallContentOpacity }}
@@ -603,16 +713,14 @@ function HomeScreen({
         </div>
       </div>
 
-      {/* MAIN CONTENT BODY (Overlapping Panel) */}
+      {/* MAIN CONTENT BODY */}
       <div className="bg-slate-100 relative z-20 flex-1 rounded-t-3xl -mt-6 pt-4 shadow-[0_-10px_40px_rgba(0,0,0,0.2)]">
         
-        {/* Horizontal Category Slider (Quick Access) */}
+        {/* Horizontal Category Slider */}
         <HorizontalScrollSlider activeCategory={activeCategory} onCategorySelect={handleCategoryClick} categories={categories} />
 
         {/* List Section */}
         <div className="px-5 pb-4 mt-2 min-h-[500px]">
-          
-          {/* Section Title */}
           <div className="flex items-center space-x-3 mb-6 mt-4 pl-1">
             <div className="w-1.5 h-8 bg-orange-600 rounded-full shadow-sm"></div>
             <div>
@@ -630,7 +738,7 @@ function HomeScreen({
 
           <div className="space-y-4 pb-20">
             {shouldShowSubCategories ? (
-              // --- SUB CATEGORIES LIST (Magazin Style) ---
+              // --- SUB CATEGORIES LIST ---
               filteredSubCategories.length > 0 ? (
                 filteredSubCategories.map((sub, index) => (
                   <div 
@@ -639,10 +747,7 @@ function HomeScreen({
                     onClick={() => onSubCategorySelect(sub.id)}
                     className="group bg-white rounded-2xl p-3 shadow-[0_8px_25px_rgba(0,0,0,0.15)] border border-slate-200 flex items-stretch active:scale-[0.98] transition-all duration-300 cursor-pointer overflow-hidden relative h-[140px]"
                   >
-                    {/* Decorative background circle */}
                     <div className="absolute -right-10 -bottom-10 w-32 h-32 bg-orange-50 rounded-full opacity-50 group-hover:scale-150 transition-transform duration-500"></div>
-
-                    {/* Left Image */}
                     <div className="w-32 flex-shrink-0 relative overflow-hidden rounded-xl shadow-md">
                       <img 
                         src={sub.image} 
@@ -650,8 +755,6 @@ function HomeScreen({
                         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                       />
                     </div>
-
-                    {/* Right Content */}
                     <div className="flex-1 ml-4 flex flex-col justify-center py-1 relative z-10">
                       <h3 className="text-lg font-bold text-slate-900 leading-tight mb-1 group-hover:text-orange-600 transition-colors">
                         {sub.title}
@@ -674,7 +777,7 @@ function HomeScreen({
                 </div>
               )
             ) : (
-              // --- PLACES LIST (Sorted by Rating) ---
+              // --- PLACES LIST ---
               sortedPlaces.length > 0 ? (
                 sortedPlaces.map((place) => (
                   <div 
@@ -792,6 +895,379 @@ function HorizontalScrollSlider({
             </span>
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+// --- AUTH SCREENS ---
+
+function LoginScreen({ onLoginSuccess, onNavigateToSignup, onBack }: { 
+  onLoginSuccess: (user: User) => void, 
+  onNavigateToSignup: () => void,
+  onBack: () => void 
+}) {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const user = await authService.login(email, password);
+      onLoginSuccess(user);
+    } catch (err) {
+      alert("Giriş yapılamadı. Lütfen bilgilerinizi kontrol edin.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = () => {
+    // Mock Google Login
+    setLoading(true);
+    setTimeout(() => {
+        setLoading(false);
+        onLoginSuccess({
+            id: 'u3',
+            name: 'Google Kullanıcısı',
+            email: 'google@gmail.com',
+            avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200&auto=format&fit=crop',
+            stats: { reviews: 0, favorites: 0, visited: 0 }
+        });
+    }, 1000);
+  };
+
+  return (
+    <div className="h-full bg-white flex flex-col">
+      {/* Header */}
+      <div className="relative h-64 bg-orange-600 flex flex-col justify-end p-8 overflow-hidden rounded-b-[40px] shadow-xl">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-10 rounded-full transform translate-x-20 -translate-y-20"></div>
+        <div className="absolute bottom-0 left-0 w-48 h-48 bg-black opacity-10 rounded-full transform -translate-x-10 translate-y-10"></div>
+        
+        <button onClick={onBack} className="absolute top-12 left-6 bg-white/20 p-2 rounded-full text-white hover:bg-white/30 backdrop-blur-sm">
+          <ArrowLeft size={20} />
+        </button>
+
+        <h1 className="text-3xl font-black text-white mb-2 relative z-10">Tekrar<br/>Hoşgeldiniz</h1>
+        <p className="text-orange-100 text-sm relative z-10">Hesabınıza giriş yaparak Edirne'yi keşfetmeye devam edin.</p>
+      </div>
+
+      {/* Form */}
+      <div className="flex-1 px-8 pt-10 overflow-y-auto">
+        <form onSubmit={handleLogin} className="space-y-6">
+          <div className="space-y-2">
+            <label className="text-sm font-bold text-slate-700 ml-1">E-Posta Adresi</label>
+            <div className="relative">
+              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
+                <Mail size={20} />
+              </div>
+              <input 
+                type="email" 
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-4 pl-12 pr-4 font-medium text-slate-800 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all"
+                placeholder="ornek@email.com"
+                required
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-bold text-slate-700 ml-1">Şifre</label>
+            <div className="relative">
+              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
+                <Lock size={20} />
+              </div>
+              <input 
+                type={showPassword ? "text" : "password"} 
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-4 pl-12 pr-12 font-medium text-slate-800 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all"
+                placeholder="••••••••"
+                required
+              />
+              <button 
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
+            <div className="flex justify-end">
+              <button type="button" className="text-xs font-bold text-orange-600 hover:text-orange-700">Şifremi Unuttum?</button>
+            </div>
+          </div>
+
+          <button 
+            type="submit" 
+            disabled={loading}
+            className="w-full bg-orange-600 text-white font-bold py-4 rounded-2xl shadow-lg shadow-orange-600/30 active:scale-[0.98] transition-transform flex items-center justify-center space-x-2 disabled:opacity-70"
+          >
+            {loading ? <Loader2 className="animate-spin" /> : <span>Giriş Yap</span>}
+          </button>
+        </form>
+
+        <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-200"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white text-gray-500 font-medium">veya</span>
+            </div>
+        </div>
+
+        <button 
+            onClick={handleGoogleLogin}
+            disabled={loading}
+            className="w-full bg-white border border-slate-200 text-slate-700 font-bold py-4 rounded-2xl shadow-sm hover:bg-slate-50 active:scale-[0.98] transition-all flex items-center justify-center space-x-3 mb-4"
+        >
+            <Chrome size={20} className="text-blue-600" />
+            <span>Google ile Giriş Yap</span>
+        </button>
+
+        <div className="mt-4 text-center pb-8">
+          <p className="text-slate-500 text-sm font-medium">
+            Hesabınız yok mu? <button onClick={onNavigateToSignup} className="text-orange-600 font-bold hover:underline">Kayıt Ol</button>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SignUpScreen({ onSignupSuccess, onNavigateToLogin, onBack }: { 
+  onSignupSuccess: (user: User) => void, 
+  onNavigateToLogin: () => void,
+  onBack: () => void 
+}) {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const user = await authService.signup(name, email, password);
+      onSignupSuccess(user);
+    } catch (err) {
+      alert("Kayıt oluşturulamadı.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="h-full bg-white flex flex-col">
+       <div className="px-6 pt-12 pb-6">
+         <button onClick={onBack} className="bg-slate-100 p-2 rounded-full text-slate-600 hover:bg-slate-200">
+            <ArrowLeft size={20} />
+         </button>
+         <h1 className="text-3xl font-black text-slate-900 mt-6 mb-2">Hesap Oluştur</h1>
+         <p className="text-slate-500">Edirne Rehberi'ne katılarak deneyimini özelleştir.</p>
+       </div>
+
+       <div className="flex-1 px-6">
+        <form onSubmit={handleSignup} className="space-y-5">
+          <div className="space-y-2">
+            <label className="text-sm font-bold text-slate-700 ml-1">Ad Soyad</label>
+            <div className="relative">
+              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
+                <UserIcon size={20} />
+              </div>
+              <input 
+                type="text" 
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-4 pl-12 pr-4 font-medium text-slate-800 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all"
+                placeholder="Adınız Soyadınız"
+                required
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-bold text-slate-700 ml-1">E-Posta</label>
+            <div className="relative">
+              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
+                <Mail size={20} />
+              </div>
+              <input 
+                type="email" 
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-4 pl-12 pr-4 font-medium text-slate-800 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all"
+                placeholder="ornek@email.com"
+                required
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-bold text-slate-700 ml-1">Şifre</label>
+            <div className="relative">
+              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
+                <Lock size={20} />
+              </div>
+              <input 
+                type="password" 
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-4 pl-12 pr-4 font-medium text-slate-800 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all"
+                placeholder="••••••••"
+                required
+              />
+            </div>
+          </div>
+
+          <button 
+            type="submit" 
+            disabled={loading}
+            className="w-full bg-slate-900 text-white font-bold py-4 rounded-2xl shadow-lg shadow-slate-900/20 active:scale-[0.98] transition-transform flex items-center justify-center space-x-2 mt-4"
+          >
+            {loading ? <Loader2 className="animate-spin" /> : <span>Kayıt Ol</span>}
+          </button>
+        </form>
+
+        <div className="mt-8 text-center">
+          <p className="text-slate-500 text-sm font-medium">
+            Zaten hesabınız var mı? <button onClick={onNavigateToLogin} className="text-orange-600 font-bold hover:underline">Giriş Yap</button>
+          </p>
+        </div>
+       </div>
+    </div>
+  );
+}
+
+function ProfileScreen({ user, onLogout, onBack }: { user: User | null, onLogout: () => void, onBack: () => void }) {
+  if (!user) return null;
+
+  return (
+    <div className="h-full bg-slate-50 flex flex-col pb-20">
+      {/* Profile Header */}
+      <div className="bg-white pb-6 rounded-b-[40px] shadow-sm relative overflow-hidden">
+        {/* Decorative Background */}
+        <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-r from-orange-400 to-pink-500"></div>
+        
+        <div className="px-6 pt-12 relative z-10 flex flex-col items-center">
+          <div className="relative mb-3">
+            <div className="w-24 h-24 rounded-full border-4 border-white shadow-lg overflow-hidden bg-slate-200 flex items-center justify-center">
+              {user.avatar ? (
+                <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
+              ) : (
+                <UserIcon size={40} className="text-slate-400" />
+              )}
+            </div>
+            <div className="absolute bottom-0 right-0 bg-blue-500 p-1.5 rounded-full border-2 border-white text-white">
+               <CheckCircle size={12} fill="currentColor" className="text-white" />
+            </div>
+          </div>
+          
+          <h1 className="text-xl font-black text-slate-900">{user.name}</h1>
+          <p className="text-sm text-slate-500 font-medium">{user.email}</p>
+
+          {/* Stats Row */}
+          <div className="flex items-center space-x-8 mt-6 w-full justify-center">
+             <div className="flex flex-col items-center">
+                <span className="text-lg font-black text-slate-800">{user.stats.visited}</span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Ziyaret</span>
+             </div>
+             <div className="h-8 w-px bg-slate-200"></div>
+             <div className="flex flex-col items-center">
+                <span className="text-lg font-black text-slate-800">{user.stats.favorites}</span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Favori</span>
+             </div>
+             <div className="h-8 w-px bg-slate-200"></div>
+             <div className="flex flex-col items-center">
+                <span className="text-lg font-black text-slate-800">{user.stats.reviews}</span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Yorum</span>
+             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Menu Options */}
+      <div className="flex-1 px-6 pt-6 space-y-3 overflow-y-auto">
+         <p className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-2 mb-1">Hesap</p>
+         
+         <button className="w-full bg-white p-4 rounded-2xl shadow-sm flex items-center justify-between group active:scale-[0.99] transition-transform">
+            <div className="flex items-center space-x-3">
+               <div className="bg-orange-50 p-2 rounded-xl text-orange-600">
+                  <UserIcon size={20} />
+               </div>
+               <span className="font-bold text-slate-700 text-sm">Profili Düzenle</span>
+            </div>
+            <ChevronRight size={18} className="text-slate-300 group-hover:text-slate-500" />
+         </button>
+
+         <button className="w-full bg-white p-4 rounded-2xl shadow-sm flex items-center justify-between group active:scale-[0.99] transition-transform">
+            <div className="flex items-center space-x-3">
+               <div className="bg-pink-50 p-2 rounded-xl text-pink-600">
+                  <Heart size={20} />
+               </div>
+               <span className="font-bold text-slate-700 text-sm">Favorilerim</span>
+            </div>
+            <ChevronRight size={18} className="text-slate-300 group-hover:text-slate-500" />
+         </button>
+
+         <button className="w-full bg-white p-4 rounded-2xl shadow-sm flex items-center justify-between group active:scale-[0.99] transition-transform">
+            <div className="flex items-center space-x-3">
+               <div className="bg-blue-50 p-2 rounded-xl text-blue-600">
+                  <Bell size={20} />
+               </div>
+               <span className="font-bold text-slate-700 text-sm">Bildirimler</span>
+            </div>
+            <div className="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">2</div>
+         </button>
+
+         <p className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-2 mb-1 mt-4">Diğer</p>
+
+         <button className="w-full bg-white p-4 rounded-2xl shadow-sm flex items-center justify-between group active:scale-[0.99] transition-transform">
+            <div className="flex items-center space-x-3">
+               <div className="bg-slate-50 p-2 rounded-xl text-slate-600">
+                  <Settings size={20} />
+               </div>
+               <span className="font-bold text-slate-700 text-sm">Uygulama Ayarları</span>
+            </div>
+            <ChevronRight size={18} className="text-slate-300 group-hover:text-slate-500" />
+         </button>
+
+         <button className="w-full bg-white p-4 rounded-2xl shadow-sm flex items-center justify-between group active:scale-[0.99] transition-transform">
+            <div className="flex items-center space-x-3">
+               <div className="bg-purple-50 p-2 rounded-xl text-purple-600">
+                  <HelpCircle size={20} />
+               </div>
+               <span className="font-bold text-slate-700 text-sm">Yardım & Destek</span>
+            </div>
+            <ChevronRight size={18} className="text-slate-300 group-hover:text-slate-500" />
+         </button>
+
+         <button className="w-full bg-white p-4 rounded-2xl shadow-sm flex items-center justify-between group active:scale-[0.99] transition-transform">
+            <div className="flex items-center space-x-3">
+               <div className="bg-slate-50 p-2 rounded-xl text-slate-600">
+                  <Shield size={20} />
+               </div>
+               <span className="font-bold text-slate-700 text-sm">Gizlilik ve Güvenlik</span>
+            </div>
+            <ChevronRight size={18} className="text-slate-300 group-hover:text-slate-500" />
+         </button>
+
+         <button 
+            onClick={onLogout}
+            className="w-full bg-red-50 p-4 rounded-2xl border border-red-100 flex items-center justify-center space-x-2 mt-4 active:scale-[0.98] transition-transform"
+          >
+            <LogOut size={20} className="text-red-500" />
+            <span className="font-bold text-red-600 text-sm">Çıkış Yap</span>
+         </button>
+         
+         <div className="text-center py-4">
+            <p className="text-[10px] text-slate-400 font-bold">Versiyon 1.0.2</p>
+         </div>
       </div>
     </div>
   );
@@ -973,15 +1449,13 @@ function DetailScreen({
         {/* Quick Stats Grid - CUSTOMIZED LAYOUTS */}
         <div className="mb-8">
           {isFoodPlace ? (
-            // --- FOOD PLACE STATS (Custom Layout) ---
+            // --- FOOD PLACE STATS (2x2 Grid + Full Width) ---
             <div className="flex flex-col gap-4">
-              {/* Row 1: Ortam (Left) - Saatler (Right) */}
               <div className="grid grid-cols-2 gap-4">
                  <InfoCard label="Ortam" value={place.atmosphere} icon={Armchair} />
                  <InfoCard label="Saatler" value={place.visitingHours} icon={Clock} />
               </div>
-              
-              {/* Row 2: Ne Yenir (Full Width) */}
+              {/* Full Width Ne Yenir Card */}
               <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-[0_8px_15px_rgba(0,0,0,0.08)] flex flex-col">
                  <div className="flex items-center space-x-2 mb-2">
                     <div className="bg-orange-50 p-2 rounded-full shadow-inner">
@@ -999,7 +1473,7 @@ function DetailScreen({
           ) : (
             // --- LANDMARK STATS (2x2 Grid) ---
             <div className="grid grid-cols-2 gap-4">
-               <InfoCard label="Mimar" value={place.architect} icon={User} />
+               <InfoCard label="Mimar" value={place.architect} icon={UserIcon} />
                <InfoCard label="Yapım Yılı" value={place.year} icon={Calendar} />
                <InfoCard label="Saatler" value={place.visitingHours} icon={Clock} />
                <InfoCard label="Giriş" value={place.entranceFee} icon={Ticket} />
